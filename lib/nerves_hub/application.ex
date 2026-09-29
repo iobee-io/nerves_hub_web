@@ -85,7 +85,6 @@ defmodule NervesHub.Application do
           # Where `NervesHubWeb.Plugs.Attack` keeps its counts.
           {PlugAttackEts, name: PlugAttackStorage, clean_period: 60_000},
           NervesHub.GroupSupervisor,
-          {Cluster.Supervisor, [NervesHub.Clustering.topologies()]},
           {Task.Supervisor, name: NervesHub.TaskSupervisor},
           # Runs its evaluations under the task supervisor above, and has to
           # be up before `device_link_handlers()` lets this node take device
@@ -98,6 +97,7 @@ defmodule NervesHub.Application do
           {MetricsLimit, [clean_period: to_timeout(minute: 5), key_older_than: to_timeout(hour: 1)]},
           {AlarmsLimit, [clean_period: to_timeout(minute: 5), key_older_than: to_timeout(hour: 1)]}
         ] ++
+        clustering() ++
         analytics_buffers() ++
         device_link_handlers() ++
         deployments_orchestrator(deploy_env()) ++
@@ -176,6 +176,16 @@ defmodule NervesHub.Application do
   def config_change(changed, _new, removed) do
     NervesHubWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  # See the `:clustering_enabled` comment in config/runtime.exs for why this
+  # defaults off.
+  defp clustering() do
+    if Application.get_env(:nerves_hub, :clustering_enabled) do
+      [{Cluster.Supervisor, [NervesHub.Clustering.topologies()]}]
+    else
+      []
+    end
   end
 
   defp oban_opts() do

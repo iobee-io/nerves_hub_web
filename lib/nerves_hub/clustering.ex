@@ -73,7 +73,9 @@ defmodule NervesHub.Clustering do
   defp postgres_topology(repo_config) do
     config =
       repo_config
-      |> Keyword.take([:hostname, :username, :password, :database, :port, :ssl])
+      # :socket_options carries DATABASE_INET6, without which this connection
+      # can't reach a database that only has an IPv6 address, as on Fly.
+      |> Keyword.take([:hostname, :username, :password, :database, :port, :ssl, :socket_options])
       |> Keyword.put(:parameters, [])
       |> Keyword.put(:channel_name, @channel_name)
 

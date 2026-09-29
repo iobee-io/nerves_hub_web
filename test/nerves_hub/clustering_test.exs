@@ -13,6 +13,7 @@ defmodule NervesHub.ClusteringTest do
     database: "nerves_hub",
     port: 5432,
     ssl: false,
+    socket_options: [:inet6],
     pool_size: 20,
     url: "postgres://nerves_hub:secret@db.internal/nerves_hub"
   ]
@@ -27,6 +28,7 @@ defmodule NervesHub.ClusteringTest do
       assert config[:channel_name] == "nerves_hub_clustering"
       assert config[:hostname] == "db.internal"
       assert config[:parameters] == []
+      assert config[:socket_options] == [:inet6]
 
       # Only what a connection needs, not the repo's pool and URL.
       refute Keyword.has_key?(config, :pool_size)
