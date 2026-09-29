@@ -20,7 +20,8 @@ jobs:
   submit_deps:
     name: "Submit Mix Dependencies"
 
-    if: "${{ github.event_name != 'pull_request' }}"
+    # nerves-hub's own dependency graph; a fork (iobee-io's has it disabled) skips it.
+    if: "${{ github.event_name != 'pull_request' && github.repository == 'nerves-hub/nerves_hub_web' }}"
 
     runs-on: ubuntu-latest
 
