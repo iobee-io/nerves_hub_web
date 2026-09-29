@@ -19,6 +19,19 @@ defmodule NervesHubWeb.API.FallbackControllerTest do
     end
   end
 
+  describe "call/2 with an AtomVM archive it could not read" do
+    test "returns 422 saying what is wrong", %{conn: conn} do
+      conn = FallbackController.call(conn, {:error, :no_application_metadata})
+      assert conn.status == 422
+      assert json_response(conn, 422)["errors"]["detail"] =~ "priv/application.bin"
+    end
+
+    test "any other atom is still a 500", %{conn: conn} do
+      conn = FallbackController.call(conn, {:error, :something_unexpected})
+      assert conn.status == 500
+    end
+  end
+
   describe "call/2 {:error, :authentication_failed}" do
     test "returns 401", %{conn: conn} do
       conn = FallbackController.call(conn, {:error, :authentication_failed})

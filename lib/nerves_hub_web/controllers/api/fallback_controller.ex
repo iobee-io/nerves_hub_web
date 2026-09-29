@@ -234,11 +234,22 @@ defmodule NervesHubWeb.API.FallbackController do
     |> render(:"401", %{reason: "Authentication failed, please check your username and password and try again."})
   end
 
+  # An AtomVM archive NervesHub could not read is the uploader's to fix: a 422
+  # saying what is wrong, not a 500 saying nothing.
   def call(conn, {:error, reason}) when is_binary(reason) or is_atom(reason) do
-    conn
-    |> put_status(500)
-    |> put_view(ErrorJSON)
-    |> render(:"500", %{reason: to_string(reason)})
+    case UpdateTool.AtomVM.error_message(reason) do
+      nil ->
+        conn
+        |> put_status(500)
+        |> put_view(ErrorJSON)
+        |> render(:"500", %{reason: to_string(reason)})
+
+      message ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> put_view(ErrorJSON)
+        |> render(:"422", %{reason: message})
+    end
   end
 
   def call(conn, {:error, reason}) do
