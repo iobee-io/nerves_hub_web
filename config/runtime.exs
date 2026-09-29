@@ -496,6 +496,14 @@ if config_env() == :prod do
       config :nerves_hub, NervesHub.AnalyticsRepo, transport_opts: [cacerts: clickhouse_cacerts]
     end
 
+    # A ClickHouse on a private network with only IPv6 addresses, as Fly's
+    # `.internal` names are: Mint resolves IPv4 only unless asked, and fails
+    # with "non-existing domain". Like DATABASE_INET6 for Postgres. Merges with
+    # the CA's transport_opts above.
+    if System.get_env("CLICKHOUSE_INET6") == "true" do
+      config :nerves_hub, NervesHub.AnalyticsRepo, transport_opts: [inet6: true]
+    end
+
     config :nerves_hub, :analytics_buffer,
       max_batch_size: String.to_integer(System.get_env("ANALYTICS_BUFFER_MAX_BATCH_SIZE", "1000")),
       max_delay: to_timeout(millisecond: String.to_integer(System.get_env("ANALYTICS_BUFFER_MAX_DELAY_MS", "500"))),
