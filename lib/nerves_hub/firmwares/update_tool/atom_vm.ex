@@ -324,6 +324,35 @@ defmodule NervesHub.Firmwares.UpdateTool.AtomVM do
   def cleanup_firmware_delta_files(_delta_path), do: :ok
 
   @doc """
+  What to tell whoever uploaded an archive this module could not read, or `nil`
+  for a reason that is not one of its own. Shared by the API and the upload
+  page, so both say the same thing.
+  """
+  @spec error_message(term()) :: String.t() | nil
+  def error_message(:not_a_packbeam),
+    do: "This is not an AtomVM packbeam: the file does not start with the packbeam header."
+
+  def error_message(:truncated_packbeam),
+    do: "This AtomVM packbeam is truncated: an entry runs past the end of the file."
+
+  def error_message(:malformed_packbeam_entry), do: "This AtomVM packbeam has an entry NervesHub could not read."
+
+  def error_message(:no_application_metadata),
+    do:
+      "This AtomVM packbeam has no <app>/priv/application.bin, which NervesHub reads the " <>
+        "product and version from. ExAtomVM does not write it: build it into priv/ before packing."
+
+  def error_message(:application_metadata_too_large),
+    do: "This AtomVM packbeam's application.bin is too large to be application metadata."
+
+  def error_message(:malformed_application_metadata),
+    do: "This AtomVM packbeam's application.bin is not an {application, Name, Properties} term."
+
+  def error_message({:missing_application_property, key}), do: "This AtomVM packbeam's application.bin has no #{key}."
+
+  def error_message(_reason), do: nil
+
+  @doc """
   Walk a packbeam, returning every entry in file order.
 
   Public because it is the piece worth testing directly, and because listing an
