@@ -11,6 +11,7 @@ defmodule NervesHubWeb.Live.Firmware do
   alias NervesHub.Firmwares
   alias NervesHub.Firmwares.Firmware
   alias NervesHub.Firmwares.UpdateTool
+  alias NervesHub.Firmwares.UpdateTool.AtomVM
   alias NervesHub.Firmwares.Upload
   alias NervesHub.Products
   alias NervesHubWeb.Components.Dialog
@@ -647,7 +648,11 @@ defmodule NervesHubWeb.Live.Firmware do
 
   defp upload_error(%Ecto.Changeset{} = changeset), do: changeset
   defp upload_error(error) when is_binary(error), do: error
-  defp upload_error(_error), do: "Unknown error uploading firmware. Please contact support."
+
+  defp upload_error(error) do
+    AtomVM.error_message(error) ||
+      "Unknown error uploading firmware. Please contact support."
+  end
 
   defp platform(), do: Branding.friendly_platform_name()
 
