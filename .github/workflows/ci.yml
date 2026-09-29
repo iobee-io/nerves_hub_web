@@ -304,7 +304,9 @@ jobs:
 
     needs: [lint, dialyzer, test, js-test]
 
-    if: ${{ github.repository == 'iobee-io/nerves_hub_web' && github.event_name == 'push' && github.ref == 'refs/heads/iobee' }}
+    # A push to iobee, or a run by hand on it (`gh workflow run "Test + Docker"
+    # --ref iobee`), e.g. to redeploy after changing a Fly secret.
+    if: ${{ github.repository == 'iobee-io/nerves_hub_web' && github.ref == 'refs/heads/iobee' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
 
     runs-on: ubuntu-latest
 
