@@ -54,6 +54,14 @@ config :nerves_hub,
   esp_idf_firmware_enabled: System.get_env("ESP_IDF_FIRMWARE_ENABLED", "false") == "true",
   atomvm_firmware_enabled: System.get_env("ATOMVM_FIRMWARE_ENABLED", "false") == "true",
   rauc_firmware_enabled: System.get_env("RAUC_FIRMWARE_ENABLED", "false") == "true",
+  # libcluster_postgres hardcodes its Postgrex.Notifications connection to
+  # auto_reconnect: false ("the process terminates" per Postgrex's own docs),
+  # and its own option whitelist won't let us override that via config. Any
+  # transient connection blip crashes the linked strategy process, which
+  # cascades up through Cluster.Supervisor's default restart budget and takes
+  # the whole app down. Off by default until that's addressed upstream, or
+  # multi-node clustering is actually needed.
+  clustering_enabled: System.get_env("CLUSTERING_ENABLED", "false") == "true",
   from_email: System.get_env("FROM_EMAIL", "no-reply@nerves-hub.org"),
   email_sender: System.get_env("EMAIL_SENDER", "NervesHub"),
   support_email_platform_name: System.get_env("SUPPORT_EMAIL_PLATFORM_NAME", "NervesHub"),

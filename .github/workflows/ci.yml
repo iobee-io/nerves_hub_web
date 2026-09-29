@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      # iobee-io's deployment branch: fly-deploy.yml deploys it once this passes.
+      - iobee
     tags:
       - "v*"
   workflow_dispatch:
@@ -226,6 +228,10 @@ jobs:
 
     needs: [lint, dialyzer, test, js-test]
 
+    # The image is nerves-hub's own, which only its repository can publish. A
+    # fork (iobee-io deploys to Fly from source, see fly-deploy.yml) skips it.
+    if: ${{ github.repository == 'nerves-hub/nerves_hub_web' }}
+
     permissions:
       contents: read
       packages: write
@@ -287,3 +293,34 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # iobee-io's fork only: the iobee branch is what runs on Fly (app
+  # nerves-hub-v2, see fly.toml), deployed once everything above has passed.
+  # A job here rather than its own workflow: `workflow_run` only fires for
+  # workflows on the default branch, and the fork's default is main.
+  # Needs a FLY_API_TOKEN secret: `fly tokens create deploy -a nerves-hub-v2`.
+  deploy:
+    name: "Deploy to Fly"
+
+    needs: [lint, dialyzer, test, js-test]
+
+    if: ${{ github.repository == 'iobee-io/nerves_hub_web' && github.event_name == 'push' && github.ref == 'refs/heads/iobee' }}
+
+    runs-on: ubuntu-latest
+
+    # One at a time, and a newer commit waits rather than racing an older one.
+    concurrency:
+      group: fly-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@1.5
+
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

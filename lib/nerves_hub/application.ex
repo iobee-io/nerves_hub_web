@@ -52,7 +52,6 @@ defmodule NervesHub.Application do
           # increments into this storage the moment it joins its group.
           {PlugAttackEts, name: PlugAttackStorage, clean_period: 60_000},
           NervesHub.GroupSupervisor,
-          {Cluster.Supervisor, [libcluster_topology()]},
           {Task.Supervisor, name: NervesHub.TaskSupervisor},
           {Oban, oban_opts()},
           NervesHubWeb.Presence,
@@ -60,6 +59,7 @@ defmodule NervesHub.Application do
           {ErrorReportLimit, [clean_period: to_timeout(minute: 5), key_older_than: to_timeout(hour: 1)]},
           {MetricsLimit, [clean_period: to_timeout(minute: 5), key_older_than: to_timeout(hour: 1)]}
         ] ++
+        clustering() ++
         analytics_buffers() ++
         device_link_handlers() ++
         deployments_orchestrator(deploy_env()) ++
@@ -125,10 +125,20 @@ defmodule NervesHub.Application do
     :ok
   end
 
+  # See the `:clustering_enabled` comment in config/runtime.exs for why this
+  # defaults off.
+  defp clustering() do
+    if Application.get_env(:nerves_hub, :clustering_enabled) do
+      [{Cluster.Supervisor, [libcluster_topology()]}]
+    else
+      []
+    end
+  end
+
   defp libcluster_topology() do
     repo_config =
       NervesHub.Repo.config()
-      |> Keyword.take([:hostname, :username, :password, :database, :port, :ssl])
+      |> Keyword.take([:hostname, :username, :password, :database, :port, :ssl, :socket_options])
       |> Keyword.put(:parameters, [])
       |> Keyword.put(:channel_name, "nerves_hub_clustering")
 
