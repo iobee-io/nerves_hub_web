@@ -146,6 +146,16 @@ defmodule NervesHubWeb.Live.Devices.IndexTest do
       end)
       |> assert_has(online_indicator)
     end
+
+    test "shows the network the device reported", %{conn: conn, fixture: fixture} do
+      %{device: device, org: org, product: product} = fixture
+      Fixtures.device_connection_fixture(device, %{network_interface: :ethernet})
+
+      conn
+      |> visit(~p"/org/#{org}/#{product}/devices")
+      |> assert_has("#device-row-#{device.id} span.lucide-ethernet-port[title^='Ethernet · ']", timeout: 1000)
+      |> refute_has("#device-row-#{device.id} span[class*='bg-status-']")
+    end
   end
 
   describe "device firmware updates" do

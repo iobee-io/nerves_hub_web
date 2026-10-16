@@ -1666,6 +1666,40 @@ defmodule NervesHubWeb.Live.Devices.Index do
     end
   end
 
+  # The network the device reported (`report_network_interface`) in place of
+  # the status dot, coloured the same way; the dot when it never said.
+  attr(:online, :boolean, required: true)
+  attr(:interface, :atom, default: nil)
+  attr(:class, :any, default: nil)
+
+  defp connection_indicator(%{interface: interface} = assigns) when interface in [:wifi, :ethernet, :cellular] do
+    ~H"""
+    <span
+      class={[interface_icon(@interface), "size-3.5 shrink-0", if(@online, do: "text-status-online", else: "text-status-offline"), @class]}
+      title={"#{interface_name(@interface)} · #{if @online, do: "Online", else: "Offline"}"}
+      role="img"
+      aria-label={"#{interface_name(@interface)}, #{if @online, do: "online", else: "offline"}"}
+    ></span>
+    """
+  end
+
+  defp connection_indicator(assigns) do
+    ~H"""
+    <.status_dot
+      class={["size-1.75", if(@online, do: "bg-status-online", else: "bg-status-offline"), @class]}
+      title={if @online, do: "Online", else: "Offline"}
+    />
+    """
+  end
+
+  defp interface_icon(:wifi), do: "lucide-wifi"
+  defp interface_icon(:ethernet), do: "lucide-ethernet-port"
+  defp interface_icon(:cellular), do: "lucide-signal"
+
+  defp interface_name(:wifi), do: "Wi-Fi"
+  defp interface_name(:ethernet), do: "Ethernet"
+  defp interface_name(:cellular), do: "Cellular"
+
   defp pagination_changes(params) do
     Ecto.Changeset.cast(
       {@default_pagination, @pagination_types},
