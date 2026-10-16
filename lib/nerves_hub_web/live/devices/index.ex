@@ -1108,8 +1108,63 @@ defmodule NervesHubWeb.Live.Devices.Index do
 
   defp connection_established_at_status(nil), do: "Not seen yet"
 
+  defp connection_established_at_status(%{network_interface: interface} = latest_connection)
+       when interface in [:wifi, :ethernet, :cellular],
+       do: "#{interface_name(interface)} · last connected at #{connection_established_at_formatted(latest_connection)}"
+
   defp connection_established_at_status(latest_connection),
     do: "Last connected at #{connection_established_at_formatted(latest_connection)}"
+
+  defp interface_name(:wifi), do: "Wi-Fi"
+  defp interface_name(:ethernet), do: "Ethernet"
+  defp interface_name(:cellular), do: "Cellular"
+
+  # The network the device reported (`report_network_interface`), green while it
+  # is online; a dot when it never said.
+  attr(:online, :boolean, required: true)
+  attr(:interface, :atom, default: nil)
+
+  defp connection_indicator(%{interface: :wifi} = assigns) do
+    ~H"""
+    <svg class="size-4" viewBox="0 0 16 16" fill="none" stroke={if(@online, do: "#10B981", else: "#71717A")}>
+      <path
+        d="M10.8573 9.17153C10.1261 8.44767 9.11595 7.99996 8.00016 7.99996C6.88438 7.99996 5.87423 8.44767 5.14302 9.17153M12.7621 7.28591C11.5434 6.07948 9.8598 5.33329 8.00016 5.33329C6.14052 5.33329 4.45694 6.07948 3.23826 7.28591M14.6668 5.4003C12.9607 3.71129 10.6037 2.66663 8.00016 2.66663C5.39667 2.66663 3.03964 3.71129 1.3335 5.4003M9.34703 12C9.34703 12.7363 8.74402 13.3333 8.00016 13.3333C7.25631 13.3333 6.65329 12.7363 6.65329 12C6.65329 11.6318 6.80405 11.2984 7.04778 11.0572C7.29152 10.8159 7.62823 10.6666 8.00016 10.6666C8.37209 10.6666 8.70881 10.8159 8.95254 11.0572C9.19628 11.2984 9.34703 11.6318 9.34703 12Z"
+        stroke-width="1.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    """
+  end
+
+  defp connection_indicator(%{interface: :ethernet} = assigns) do
+    ~H"""
+    <svg class="size-4" viewBox="0 0 16 16" fill="none" stroke={if(@online, do: "#10B981", else: "#71717A")}>
+      <path
+        d="M3 6.5V12.5C3 12.7761 3.22386 13 3.5 13H12.5C12.7761 13 13 12.7761 13 12.5V6.5C13 6.22386 12.7761 6 12.5 6H11V4.5C11 4.22386 10.7761 4 10.5 4H5.5C5.22386 4 5 4.22386 5 4.5V6H3.5C3.22386 6 3 6.22386 3 6.5ZM6 13V10.5M8 13V10.5M10 13V10.5"
+        stroke-width="1.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    """
+  end
+
+  defp connection_indicator(%{interface: :cellular} = assigns) do
+    ~H"""
+    <svg class="size-4" viewBox="0 0 16 16" fill="none" stroke={if(@online, do: "#10B981", else: "#71717A")}>
+      <path d="M3 13V11M6 13V9M9 13V6.5M12 13V3.5" stroke-width="1.6" stroke-linecap="round" />
+    </svg>
+    """
+  end
+
+  defp connection_indicator(assigns) do
+    ~H"""
+    <svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 6 6" fill="none">
+      <circle cx="3" cy="3" r="3" fill={if(@online, do: "#10B981", else: "#71717A")} />
+    </svg>
+    """
+  end
 
   defp connection_established_at(latest_connection), do: connection_established_at_formatted(latest_connection)
 

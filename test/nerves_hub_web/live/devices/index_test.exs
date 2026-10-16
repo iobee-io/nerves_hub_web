@@ -100,6 +100,16 @@ defmodule NervesHubWeb.Live.Devices.IndexTest do
       end)
       |> assert_has("circle[fill='#{online_indicator_color}']")
     end
+
+    test "shows the network the device reported", %{conn: conn, fixture: fixture} do
+      %{device: device, org: org, product: product} = fixture
+      Fixtures.device_connection_fixture(device, %{network_interface: :ethernet})
+
+      conn
+      |> visit(~p"/org/#{org}/#{product}/devices")
+      |> assert_has("span[title^='Ethernet · last connected at'] svg", timeout: 1000)
+      |> refute_has("span[title^='Ethernet'] circle")
+    end
   end
 
   describe "device firmware updates" do
