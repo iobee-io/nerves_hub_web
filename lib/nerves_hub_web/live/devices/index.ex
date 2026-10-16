@@ -1713,6 +1713,42 @@ defmodule NervesHubWeb.Live.Devices.Index do
     })
   end
 
+  # The network the device reported (`report_network_interface`) in place of
+  # the status dot, coloured the same way. A device asleep or overdue shows
+  # its sleep mark instead, and one that never said its network the dot
+  # (`DeviceSleep.status_mark/1` for both).
+  attr(:status, :string, required: true, doc: "`DeviceSleep.list_status/2`: online, asleep, overdue or offline")
+  attr(:connection, :any, required: true, doc: "the device's latest `DeviceConnection`, or nil")
+  attr(:class, :any, default: nil)
+
+  defp connection_indicator(%{status: status, connection: %DeviceConnection{network_interface: interface}} = assigns)
+       when status in ["online", "offline"] and interface in [:wifi, :ethernet, :cellular] do
+    assigns = assign(assigns, online: status == "online", interface: interface)
+
+    ~H"""
+    <span
+      class={[interface_icon(@interface), "size-3.5 shrink-0", if(@online, do: "text-status-online", else: "text-status-offline"), @class]}
+      title={"#{interface_name(@interface)} · #{if @online, do: "Online", else: "Offline"}"}
+      role="img"
+      aria-label={"#{interface_name(@interface)}, #{if @online, do: "online", else: "offline"}"}
+    ></span>
+    """
+  end
+
+  defp connection_indicator(assigns) do
+    ~H"""
+    <DeviceSleep.status_mark status={@status} connection={@connection} class={@class} />
+    """
+  end
+
+  defp interface_icon(:wifi), do: "lucide-wifi"
+  defp interface_icon(:ethernet), do: "lucide-ethernet-port"
+  defp interface_icon(:cellular), do: "lucide-signal"
+
+  defp interface_name(:wifi), do: "Wi-Fi"
+  defp interface_name(:ethernet), do: "Ethernet"
+  defp interface_name(:cellular), do: "Cellular"
+
   defp pagination_changes(params) do
     Ecto.Changeset.cast(
       {@default_pagination, @pagination_types},

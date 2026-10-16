@@ -321,7 +321,7 @@
                   </td>
                   <td class="max-sm:col-span-2 max-sm:col-start-2 max-sm:row-start-1 max-sm:min-w-0">
                     <div class="flex items-center gap-2">
-                      <DeviceSleep.status_mark
+                      <.connection_indicator
                         status={@device_statuses.result[device.id]}
                         connection={device.latest_connection}
                         class={(@selecting? or @selected_devices != []) && "max-sm:hidden"}
