@@ -24,6 +24,15 @@ kill_signal = 'SIGTERM'
   DEVICE_HOST = 'nerves-hub-v2.fly.dev'
   DEVICE_PORT = '4001'
   DATABASE_POOL_SIZE = '5'
+  # Only the CA that signs our device certificates (see [[files]]). Unset, the
+  # endpoint uses the public CA bundle, and TLS 1.2 sends all ~120 names in
+  # every CertificateRequest: ~12.6 KB per handshake, on the modem too.
+  DEVICE_SSL_CACERTFILE = '/app/device-ca.pem'
+
+# The secret holds the CA certificate base64-encoded, as Fly expects.
+[[files]]
+  guest_path = '/app/device-ca.pem'
+  secret_name = 'DEVICE_SSL_CACERT_PEM'
 
 [http_service]
   internal_port = 8080
