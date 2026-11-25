@@ -2,6 +2,7 @@ defmodule NervesHubWeb.ApiSpec do
   @behaviour OpenApiSpex.OpenApi
 
   alias NervesHubWeb.API.OpenAPI.DeviceControllerSpecs
+  alias NervesHubWeb.API.OpenAPI.DeviceHistoryControllerSpecs
   alias NervesHubWeb.API.OpenAPI.DeviceLogControllerSpecs
   alias NervesHubWeb.API.OpenAPI.DeviceMetricControllerSpecs
   alias NervesHubWeb.API.OpenAPI.SupportScriptControllerSpecs
@@ -93,6 +94,14 @@ defmodule NervesHubWeb.ApiSpec do
           description: "Metric history Devices have reported over the health or metrics extension"
         },
         %Tag{
+          name: "Device Alarms",
+          description: "Alarm transitions Devices have reported: each raise and each resolve"
+        },
+        %Tag{
+          name: "Device Update Attempts",
+          description: "How Devices' firmware update attempts ended"
+        },
+        %Tag{
           name: "Devices (short URL)",
           description: "Device management, including action requests eg. upgrade, reboot, reconnect"
         },
@@ -152,6 +161,7 @@ defmodule NervesHubWeb.ApiSpec do
     }
     |> DeviceControllerSpecs.add_operations()
     |> DeviceLogControllerSpecs.add_operations()
+    |> DeviceHistoryControllerSpecs.add_operations()
     |> DeviceMetricControllerSpecs.add_operations()
     |> SupportScriptControllerSpecs.add_operations()
     # Discover request/response schemas from path specs

@@ -326,6 +326,67 @@ defmodule NervesHub.Devices.UpdateHistory do
      }}
   end
 
+  @typedoc """
+  How to narrow a device's update attempts in `attempts_for_device/2`.
+
+  - `:statuses` — only attempts that ended in one of these (see
+    `statuses/0`), as strings.
+  - `:since` — at or after this time (inclusive).
+  - `:before` — strictly before this time (exclusive), so the oldest
+    timestamp of a page can be passed back as the next page's `:before`.
+  - `:limit` — how many attempts to return. Defaults to 100.
+  - `:order` — `:desc` (newest first, the default) or `:asc`.
+  """
+  @type attempts_opt ::
+          {:statuses, [String.t()] | nil}
+          | {:since, DateTime.t() | nil}
+          | {:before, DateTime.t() | nil}
+          | {:limit, pos_integer()}
+          | {:order, :asc | :desc}
+
+  @doc """
+  A device's finished update attempts, newest first, narrowed by `opts` (see
+  `t:attempts_opt/0`), shaped as `device_attempts/3` shapes them.
+
+  For the API, which pages by time like the device's logs and metrics, where
+  `device_attempts/3` pages by number for the device page. Reads ClickHouse,
+  so it is empty where `:analytics_enabled` is not set.
+  """
+  @spec attempts_for_device(device(), [attempts_opt()]) :: [attempt()]
+  def attempts_for_device(device, opts \\ []) do
+    order = Keyword.get(opts, :order, :desc)
+
+    from(h in DeviceUpdateHistory,
+      where: h.org_id == ^device.org_id,
+      where: h.product_id == ^device.product_id,
+      where: h.device_id == ^device.id,
+      order_by: [{^order, h.timestamp}],
+      limit: ^Keyword.get(opts, :limit, 100),
+      select: %{
+        timestamp: h.timestamp,
+        status: h.status,
+        reason: h.reason,
+        source_firmware_uuid: h.source_firmware_uuid,
+        target_firmware_uuid: h.target_firmware_uuid,
+        deployment_id: h.deployment_id
+      }
+    )
+    |> filter_statuses(Keyword.get(opts, :statuses))
+    |> filter_since(Keyword.get(opts, :since))
+    |> filter_before(Keyword.get(opts, :before))
+    |> AnalyticsRepo.all()
+    |> resolve(device.product_id)
+  end
+
+  defp filter_statuses(query, nil), do: query
+  defp filter_statuses(query, statuses), do: where(query, [h], h.status in ^statuses)
+
+  defp filter_since(query, nil), do: query
+  defp filter_since(query, since), do: where(query, [h], h.timestamp >= ^since)
+
+  defp filter_before(query, nil), do: query
+  defp filter_before(query, before), do: where(query, [h], h.timestamp < ^before)
+
   defp resolve(rows, product_id) do
     uuids =
       rows
