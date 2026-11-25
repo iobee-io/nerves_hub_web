@@ -126,6 +126,8 @@ defmodule NervesHubWeb.Router do
 
       get("/logs", DeviceLogController, :index)
       get("/metrics", DeviceMetricController, :index)
+      get("/alarms", DeviceAlarmController, :index)
+      get("/update_attempts", DeviceUpdateAttemptController, :index)
     end
 
     # A product API key works on these as well as a user API token does.
@@ -166,6 +168,14 @@ defmodule NervesHubWeb.Router do
 
           scope "/metrics" do
             get("/", DeviceMetricController, :index)
+          end
+
+          scope "/alarms" do
+            get("/", DeviceAlarmController, :index)
+          end
+
+          scope "/update_attempts" do
+            get("/", DeviceUpdateAttemptController, :index)
           end
 
           scope "/network_identities" do

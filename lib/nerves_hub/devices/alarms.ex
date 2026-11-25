@@ -31,6 +31,7 @@ defmodule NervesHub.Devices.Alarms do
 
   alias Ecto.Multi
   alias NervesHub.Analytics.Buffer
+  alias NervesHub.AnalyticsRepo
   alias NervesHub.DeviceLink.DeviceInfo
   alias NervesHub.Devices.Device
   alias NervesHub.Devices.DeviceAlarm
@@ -205,6 +206,71 @@ defmodule NervesHub.Devices.Alarms do
       alarms -> alarms
     end
   end
+
+  @typedoc """
+  How to narrow a device's alarm history in `history_for_device/2`.
+
+  - `:alarms` — only these alarm names, as stored (without `Elixir.`).
+  - `:events` — only `"raised"` or only `"resolved"` transitions.
+  - `:since` — at or after this time (inclusive).
+  - `:before` — strictly before this time (exclusive), so the oldest
+    timestamp of a page can be passed back as the next page's `:before`.
+  - `:limit` — how many transitions to return. Defaults to 100.
+  - `:order` — `:desc` (newest first, the default) or `:asc`.
+  """
+  @type history_opt ::
+          {:alarms, [String.t()] | nil}
+          | {:events, [String.t()] | nil}
+          | {:since, DateTime.t() | nil}
+          | {:before, DateTime.t() | nil}
+          | {:limit, pos_integer()}
+          | {:order, :asc | :desc}
+
+  @typedoc "One alarm transition as `history_for_device/2` returns it."
+  @type transition :: %{
+          timestamp: DateTime.t(),
+          alarm: String.t(),
+          event: String.t(),
+          description: String.t() | nil
+        }
+
+  @doc """
+  A device's alarm transitions — each raise and each resolve — newest first,
+  narrowed by `opts` (see `t:history_opt/0`).
+
+  Reads ClickHouse (`NervesHub.Devices.DeviceAlarmHistory`), so it is empty
+  where `:analytics_enabled` is not set, and a transition that just happened
+  may take a moment to appear. Where `current_alarms_for_device/1` answers
+  "what is alarming now", this answers "what has alarmed".
+  """
+  @spec history_for_device(Device.t(), [history_opt()]) :: [transition()]
+  def history_for_device(%Device{} = device, opts \\ []) do
+    order = Keyword.get(opts, :order, :desc)
+
+    DeviceAlarmHistory
+    |> where(org_id: ^device.org_id, product_id: ^device.product_id, device_id: ^device.id)
+    |> filter_in(:alarm, Keyword.get(opts, :alarms))
+    |> filter_in(:event, Keyword.get(opts, :events))
+    |> filter_since(Keyword.get(opts, :since))
+    |> filter_before(Keyword.get(opts, :before))
+    |> order_by([h], [{^order, h.timestamp}])
+    |> limit(^Keyword.get(opts, :limit, 100))
+    |> select([h], %{timestamp: h.timestamp, alarm: h.alarm, event: h.event, description: h.description})
+    |> AnalyticsRepo.all()
+    |> Enum.map(fn transition -> %{transition | description: blank_to_nil(transition.description)} end)
+  end
+
+  defp filter_in(query, _field, nil), do: query
+  defp filter_in(query, field, values), do: where(query, [h], field(h, ^field) in ^values)
+
+  defp filter_since(query, nil), do: query
+  defp filter_since(query, since), do: where(query, [h], h.timestamp >= ^since)
+
+  defp filter_before(query, nil), do: query
+  defp filter_before(query, before), do: where(query, [h], h.timestamp < ^before)
+
+  defp blank_to_nil(""), do: nil
+  defp blank_to_nil(description), do: description
 
   # ------------------------------------------------------------------ writes
 
